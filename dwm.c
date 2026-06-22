@@ -24,6 +24,7 @@
 #include <locale.h>
 #include <signal.h>
 #include <stdarg.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -193,6 +194,7 @@ static void resizeclient(Client *c, int x, int y, int w, int h);
 static void resizemouse(const Arg *arg);
 static void restack(Monitor *m);
 static void run(void);
+static void autostart_run(void);
 static void scan(void);
 static int sendevent(Client *c, Atom proto);
 static void sendmon(Client *c, Monitor *m);
@@ -1383,11 +1385,22 @@ void
 run(void)
 {
 	XEvent ev;
+	
 	/* main event loop */
 	XSync(dpy, False);
 	while (running && !XNextEvent(dpy, &ev))
 		if (handler[ev.type])
 			handler[ev.type](&ev); /* call handler */
+}
+
+void
+autostart_run(void)
+{
+	size_t i;
+	for (i = 0; i < sizeof(autostart) / sizeof(autostart[0]); i++) {
+		Arg arg = { .v = autostart[i] };
+		spawn(&arg);
+	}
 }
 
 void
@@ -2158,6 +2171,7 @@ main(int argc, char *argv[])
 		die("pledge");
 #endif /* __OpenBSD__ */
 	scan();
+	autostart_run();
 	run();
 	cleanup();
 	XCloseDisplay(dpy);
